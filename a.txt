@@ -264,7 +264,6 @@ class CryptAES
     {
         return $this->pad_or_unpad($str, 'un');
     }
-    //¼ÓÃÜ
     public function encrypt($str)
     {
         $str = $this->pad($str);
@@ -317,4 +316,8 @@ class CryptAES
         }
         return $bindata;
     }
+
+//return false;
+//echo "¿¿";
+
 }
