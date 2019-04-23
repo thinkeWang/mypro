@@ -316,6 +316,9 @@ class CryptAES
         }
         return $bindata;
     }
+    public function a(){
+    	echo "this is a function , haha !";
+    }
 
 //return false;
 //echo "¿¿";
