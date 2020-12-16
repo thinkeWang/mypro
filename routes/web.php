@@ -14,3 +14,11 @@
 Route::get('/', function () {
     return view('welcome');
 });
+
+
+Route::match(['get','post'],'login','Admin\LoginController@login');
+
+
+Route::group(['middleware'=>['checkTokens']],function(){
+    Route::match(['get','post'],'goodsList','Admin\GoodsController@GoodsList');
+});
