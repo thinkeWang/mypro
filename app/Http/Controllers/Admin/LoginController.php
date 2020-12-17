@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Models\User;
 use App\Http\Controllers\Controller;
+use App\Http\Service\ReturnMsg;
+use App\Http\Service\Login;
 use Illuminate\Http\Request;
 
 class LoginController extends Controller
@@ -14,19 +15,15 @@ class LoginController extends Controller
         echo 'ok';
     }
 
-
-
     public function login(Request $request){
-        setcookie('abc','haha',time()+3600,'/');
-        Session()->put('ww',111);
         $inp = $request->input();
         $validator =\Validator::make($inp,[
             'username'=>'required|numeric',
             'password'=>'required|string|min:6|max:16'
         ]);
         if(!$validator->passes()){
-            return self::returnJson("请填写正确账号和密码",-101);
+            return ReturnMsg::getMsg(1001);
         }
-        return User::login($inp);
+        return Login::login($inp);
     }
 }
