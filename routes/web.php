@@ -16,9 +16,13 @@ Route::get('/', function () {
 });
 
 
-Route::match(['get','post'],'login','Admin\LoginController@login');
 
 
-Route::group(['middleware'=>['checkTokens']],function(){
-    Route::match(['get','post'],'goodsList','Admin\GoodsController@GoodsList');
-});
+//Route::group(function(){
+    Route::match(['get','post'],'login','Admin\LoginController@login')->name('login');
+
+    Route::group(['middleware'=>['checkTokens']],function(){
+        Route::match(['get','post'],'goodsList','Admin\GoodsController@GoodsList');
+
+    });
+//});

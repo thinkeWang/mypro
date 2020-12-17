@@ -3,7 +3,7 @@
 namespace App\Http\Middleware;
 
 use Closure;
-
+use Illuminate\Http\Request;
 class checkTokens
 {
     /**
@@ -13,10 +13,13 @@ class checkTokens
      * @param  \Closure  $next
      * @return mixed
      */
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next)
     {
-//        dd($_COOKIE);
-        return $next($request);
+
+        var_dump($request->session()->get('ww'));
+        dd($_COOKIE);
+     
+//        return $next($request);
 //        if (explode('?',$request->getUri())[0] === route('login')) {
 //            return $next($request);
 //        }

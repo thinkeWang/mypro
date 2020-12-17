@@ -13,6 +13,16 @@ use Illuminate\Http\Request;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
-});
+//Route::middleware('auth:api')->get('/user', function (Request $request) {
+//    return $request->user();
+//});
+
+
+//Route::prefix('api')->group(function(){
+//    Route::match(['get','post'],'login','Admin\LoginController@login');
+//
+////    Route::group(['middleware'=>['web']],function(){
+//    Route::match(['get','post'],'goodsList','Admin\GoodsController@GoodsList');
+//
+////    });
+//});
