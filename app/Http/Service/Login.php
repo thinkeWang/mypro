@@ -15,7 +15,7 @@ class Login{
         if($res->password !== md5($res->salt.$data['password'])){
             return ReturnMsg::getMsg(1003);
         }
-        UserInfo::setInfo($res);
+        Common::setInfo($res);
         return ReturnMsg::getMsg(0);
     }
 

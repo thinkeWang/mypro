@@ -22,7 +22,10 @@ Route::get('/', function () {
     Route::match(['get','post'],'login','Admin\LoginController@login')->name('login');
 
     Route::group(['middleware'=>['checkTokens']],function(){
+        /*商品信息*/
         Route::match(['get','post'],'goodsList','Admin\GoodsController@GoodsList');
+        Route::match(['get','post'],'goodsCategary','Admin\GoodsController@CategaryList');
+        Route::match(['get','post'],'CategaryAdd','Admin\GoodsController@CategaryAdd');
 
     });
 //});
