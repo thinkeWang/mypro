@@ -27,7 +27,7 @@ class checkTokens
         $key = "web_app".$token['id'];
         if($token['ip'] !== request()->ip()){
             //清除当前登录的数据
-            setcookie('web_app',null,0);
+            setcookie('web_app',null);
             //并记录数据库
             return response()->json(ReturnMsg::getMsg(-1001));
         }

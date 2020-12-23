@@ -9,11 +9,6 @@ use Illuminate\Http\Request;
 
 class LoginController extends Controller
 {
-    public function index(Request $request){
-        setcookie('wzy',rand(),time()+3600,'/');
-        Session()->put('qq',rand());
-        echo 'ok';
-    }
 
     public function login(Request $request){
         $inp = $request->input();

@@ -24,8 +24,17 @@ Route::get('/', function () {
     Route::group(['middleware'=>['checkTokens']],function(){
         /*商品信息*/
         Route::match(['get','post'],'goodsList','Admin\GoodsController@GoodsList');
-        Route::match(['get','post'],'goodsCategary','Admin\GoodsController@CategaryList');
-        Route::match(['get','post'],'CategaryAdd','Admin\GoodsController@CategaryAdd');
+        /*商品类型信息*/
+        Route::match(['get'],'goodsCategary','Admin\GoodsController@CategaryList');
+        Route::match(['post'],'CategaryAdd','Admin\GoodsController@CategaryAdd');
+        Route::match(['post'],'CategaryEdit','Admin\GoodsController@CategaryEdit');
+        Route::match(['post'],'CategaryDel','Admin\GoodsController@CategaryDel');
+        /*商品属性信息*/
+        Route::match(['get'],'goodsSku','Admin\GoodsController@goodsSku');     //属性+属性值列表
+        Route::match(['post'],'goodsSkuAdd','Admin\GoodsController@SkuAdd');   //属性添加
+
+        Route::match(['post'],'SkuValAdd','Admin\GoodsController@SkuValAdd');  //属性值添加
+        Route::match(['post'],'SkuValDel','Admin\GoodsController@SkuValDel');  //属性值删除
 
     });
 //});
