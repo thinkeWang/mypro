@@ -7,19 +7,64 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Service\ReturnMsg;
 use Illuminate\Database\Query;
 class Goods{
-    public static function getTypeList($inp){
-        $query = DB::table('categary')
-            ->select('user.name as uname', 'categary.name', 'categary.id', 'categary.pid', 'categary.created_time')
-            ->leftJoin('user', 'user.id', '=', 'categary.operator');
+    /***
+     * @param $inp
+     * @return array
+     * 商品列表
+     */
+    public static function GoodsList($inp){
+        $gname = isset($inp['gname'])&&!empty($inp['gname']) ? $inp['gname'] : "";
+        $gtype = isset($inp['gtype'])&&!empty($inp['gtype']) ? $inp['gtype'] : "";
+        $query = DB::table('goods')
+            ->select('user.name as uname', 'categary.name as tname','goods_detail.*','goods.*',
+                'goods_detail.id as dId','goods_detail.gdesc as desc','goods_detail.operator as doperator',
+                'goods_detail.created_at as dcreated_at','goods_detail.updated_at as dupdated_at')
+            ->leftJoin('goods_detail', 'goods.id', '=', 'goods_detail.gid')
+            ->leftJoin('categary', 'goods.category_id', '=', 'categary.id')
+            ->leftJoin('user', 'goods.operator', '=', 'user.id')
+            ->orderBy('goods.id')
+            ->when($gname, function ($query) use ( $gname ) {
+                return $query->where('goods.category_id', $gname);
+            })
+            ->when($gtype, function ($query) use ($gtype) {
+                return $query->where('goods.gname', $gtype);
+            });
         $count = $query->count();
         $res = $query->offset(($inp['pageIndex']-1)*$inp['pageSize'])
             ->limit($inp['pageSize'])
             ->get();
         $ee = Common::objToArr($res);
-        if(!$ee){
-            return ReturnMsg::getMsg(0,['list'=>[]]);
-        }
-        return ReturnMsg::getMsg(0,['list'=>Common::authGetTree($ee),'pageTotal'=>$count-1]);
+        //获取所有类型
+        $TypeRes = self::getTypeList(array());
+        return ReturnMsg::getMsg(0,['list'=>$ee,'pageTotal'=>$count,'type'=>$TypeRes['list']]);
+    }
+
+
+    public static function getSkuList($data){
+        //获取商品所有类型
+        $typeList = self::getTypeList([]);
+        //获取所有属性key值
+        $key = DB::table('skukey')->get();
+        $keyList = Common::objToArr($key);
+        //获取所有属性value值
+        $val = DB::table('skuvalue')->get();
+        $valList = Common::objToArr($val);
+        return ReturnMsg::getMsg(0,['List'=>['typeList'=>$typeList['list'],'keyList'=>$keyList,'valList'=>$valList]]);
+    }
+
+    public static function getTypeList($inp){
+        $pageIndex = isset($inp['pageIndex'])&&!empty($inp['pageIndex']) ? $inp['pageIndex'] : 0;
+        $pageSize = isset($inp['pageSize'])&&!empty($inp['pageSize']) ? $inp['pageSize'] : 0;
+        $query = DB::table('categary')
+            ->select('user.name as uname', 'categary.name', 'categary.id', 'categary.pid', 'categary.created_time')
+            ->leftJoin('user', 'user.id', '=', 'categary.operator');
+        $count = $query->count();
+        $res = $query->when($pageIndex, function ($query) use ( $pageIndex ,$pageSize) {
+            return $query->offset(($pageIndex-1)*$pageSize)
+                ->limit($pageSize);
+        })->get();
+        $ee = Common::objToArr($res);
+        return ReturnMsg::getMsg(0,['list'=>$ee,'pageTotal'=>$count-1]);
     }
 
     public static function TypeAdd($data){
@@ -265,6 +310,42 @@ class Goods{
         //记录日志
         Common::actionLog($log);
         return ReturnMsg::getMsg(0);
+    }
+    /***
+     * @param $data
+     * @return array
+     * 获取属性key
+     */
+    public static function getskukey($data){
+        $count = DB::table('categary')
+            ->where('id',$data['id'])
+            ->count();
+        if(!$count){
+            return ReturnMsg::getMsg('1019');
+        }
+        $res = DB::table('skukey')
+            ->where('cid',$data['id'])
+            ->get();
+        $res = Common::objToArr($res);
+        return ReturnMsg::getMsg(0,['list'=>$res]);
+    }
+    /***
+     * @param $data
+     * @return array
+     * 获取属性val
+     */
+    public static function getskuval($data){
+        $count = DB::table('skukey')
+            ->where('id',$data['id'])
+            ->count();
+        if(!$count){
+            return ReturnMsg::getMsg('1020');
+        }
+        $res = DB::table('skuvalue')
+            ->where('kid',$data['id'])
+            ->get();
+        $res = Common::objToArr($res);
+        return ReturnMsg::getMsg(0,['list'=>$res]);
     }
 
 }

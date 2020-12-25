@@ -24,6 +24,9 @@ Route::get('/', function () {
     Route::group(['middleware'=>['checkTokens']],function(){
         /*商品信息*/
         Route::match(['get','post'],'goodsList','Admin\GoodsController@GoodsList');
+        Route::match(['get','post'],'goodsAdd','Admin\GoodsController@goodsAdd');
+        Route::match(['get','post'],'getskukey','Admin\GoodsController@getskukey');
+        Route::match(['get','post'],'getskuval','Admin\GoodsController@getskuval');
         /*商品类型信息*/
         Route::match(['get'],'goodsCategary','Admin\GoodsController@CategaryList');
         Route::match(['post'],'CategaryAdd','Admin\GoodsController@CategaryAdd');
