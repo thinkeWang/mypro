@@ -118,5 +118,14 @@ class Common{
         DB::table('action_log')->insert($where);
     }
 
+    public static function upload($name,$path,$realName,$proname){
+        DB::table('uploads')->insert([
+            'uid' => self::getId(),
+            'name' =>$proname,
+            'img_path'=>env('APP_URL').'/storage/app/'.$path,
+            'img_real_name'=>$realName,
+            'created_at'=> date('Y-m-d H:i:s')
+        ]);
+    }
 
 }

@@ -18,13 +18,17 @@ class CreateGoodsDetailTable extends Migration
             $table->integer('gid')->default(0)->comment('商品id');
             $table->string('goodsname')->default('')->comment('商品名称');
             $table->string('goodssku')->default('')->comment('sku信息（json格式，列表中用）');
+            $table->string('gskukey')->default('')->comment('skukey');
+            $table->string('gskuval')->default('')->comment('skuval');
             $table->integer('goodsprice')->default(0)->comment('商品价格');
             $table->integer('goodsnum')->default(0)->comment('商品数量');
             $table->enum('isdel',['0','1'])->default('0')->comment('是否删除：0：否，1：是');
             $table->text('gdesc')->comment('商品描述');
+            $table->text('img')->comment('商品图片');
             $table->integer('operator')->default(0)->comment('操作人');
             $table->index('gid');
             $table->timestamps();
+            $table->engine = 'InnoDB';
         });
     }
 

@@ -24,23 +24,62 @@ class GoodsController extends Controller
     /***
      * @param Request $request
      * @return array
+     * 获取所属商品列表
+     */
+    public function goodsBelong(Request $request){
+        $inp = $request->input();
+        $validator =\Validator::make($inp,[
+            'id'=>'required|numeric',
+        ]);
+        if(!$validator->passes()){
+            return ReturnMsg::getMsg(1004);
+        }
+        return Goods::goodsBelong($inp);
+    }
+    /***
+     * @param Request $request
+     * @return array
+     * 商品上下架
+     */
+    public function goodsstatus(Request $request){
+        $inp = $request->input();
+        $validator =\Validator::make($inp,[
+            'id'=>'required|numeric',
+            'status'=>'required',
+        ]);
+        if(!$validator->passes()){
+            return ReturnMsg::getMsg(1004);
+        }
+        return Goods::goodsstatus($inp);
+    }
+
+    /***
+     * @param Request $request
+     * @return array
      * 获取属性名称列表
      */
     public function goodsAdd(Request $request){
         $inp = $request->input();
-        if($request->isMethod('GET')){
-            return Goods::getSkuList($inp);
+        if($request->isMethod('get')){
+            return Goods::getBelongGoods();
         }else{
             $validator =\Validator::make($inp,[
-                'pageIndex'=>'required|numeric',
-                'pageSize'=>'required|numeric|min:10|max:50'
+                'gnum'=>'required|numeric',
+                'gprice'=>'required|numeric',
+                'skuKey'=>'required|numeric',
+                'skuVal'=>'required|numeric',
+                'status'=>'required|numeric',
+                'gname'=>'required|string',
+                'gtext'=>'required|string',
+                'gupload'=>'required|string',
+                'title'=>'required|string',
+                'belongtypeid'=>'required|numeric',
             ]);
-            if(!$validator->passes() || !empty($inp['gtype']) && !is_numeric($inp['gtype']) || !empty($inp['gname']) && !is_string($inp['gname'])){
+            if(!$validator->passes()){
                 return ReturnMsg::getMsg(1004);
             }
-            return Goods::GoodsList($inp);
+            return Goods::goodsAdd($inp);
         }
-
     }
 
     /**

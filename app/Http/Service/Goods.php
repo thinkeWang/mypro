@@ -24,10 +24,10 @@ class Goods{
             ->leftJoin('user', 'goods.operator', '=', 'user.id')
             ->orderBy('goods.id')
             ->when($gname, function ($query) use ( $gname ) {
-                return $query->where('goods.category_id', $gname);
+                return $query->where('goods.gname', $gname);
             })
             ->when($gtype, function ($query) use ($gtype) {
-                return $query->where('goods.gname', $gtype);
+                return $query->where('goods.category_id', $gtype);
             });
         $count = $query->count();
         $res = $query->offset(($inp['pageIndex']-1)*$inp['pageSize'])
@@ -39,6 +39,275 @@ class Goods{
         return ReturnMsg::getMsg(0,['list'=>$ee,'pageTotal'=>$count,'type'=>$TypeRes['list']]);
     }
 
+    /***
+     * 添加商品
+     */
+    public static function goodsAdd($data){
+        if($data['belongtypeid'] == 0 && empty($data['cid'])){
+            return ReturnMsg::getMsg(1022);
+        }
+        if($data['belongtypeid'] != 0){
+            $data['cid'] = $data['belongtypeid'];
+        }
+        //判断类型是否一致
+        $exit = DB::table('categary')
+            ->leftJoin('skukey', 'categary.id', '=', 'skukey.cid')
+            ->leftJoin('skuvalue', 'skuvalue.kid', '=', 'skukey.id')
+            ->where('categary.id',$data['cid'])
+            ->where('skukey.id',$data['skuKey'])
+            ->where('skuvalue.id',$data['skuVal'])
+            ->count();
+        if(!$exit){
+            return ReturnMsg::getMsg(1021);
+        }
+        if($data['belongtypeid'] == 0){//新增还不存在的商品
+            //判断是否存在此商品（根据名称和类型）
+            $count = DB::table('goods')
+                ->where('gname',$data['gname'])
+                ->where('category_id',$data['cid'])
+                ->count();
+            if($count){
+                return ReturnMsg::getMsg(1023);
+            }
+            $gdata = array();
+            $gdata['category_id'] = $data['cid'];
+            $gdata['gname'] = $data['gname'];
+            $gdata['gprice'] = $data['gprice']*100;
+            $gdata['title'] = $data['title'];
+            $gdata['gnum'] = $data['gnum'];
+            $gdata['gstatus'] = $data['status'];
+            $gdata['gdesc'] = $data['gtext'];
+            $gdata['operator'] = Common::getId();
+            $gdata['created_at'] = date('Y-m-d H:i:s');
+            $detal = array();
+            $detal['goodsname'] = $data['gname'];
+            $detal['goodsprice'] = $data['gprice']*100;
+            $detal['goodsnum'] = $data['gnum'];
+            $detal['isdel'] = '0';
+            $detal['gdesc'] = $data['gtext'];
+            $detal['img'] = $data['gupload'];
+            $detal['gskukey'] = $data['skuKey'];
+            $detal['gskuval'] = $data['skuVal'];
+            $detal['operator'] = Common::getId();
+            $detal['created_at'] = date('Y-m-d H:i:s');
+            $key = DB::table('skukey')->where('id',$data['skuKey'])->first();
+            $key = get_object_vars($key);
+            if(!$key){
+                return ReturnMsg::getMsg(1020);
+            }
+            $val = DB::table('skuvalue')->where('id',$data['skuVal'])->first();
+            $val = get_object_vars($val);
+            if(!$val){
+                return ReturnMsg::getMsg(1017);
+            }
+            $sku = array();
+            $sku[$data['skuKey']]['keyName'] = $key['name'];
+            $sku[$data['skuKey']]['valid'] = $data['skuVal'];
+            $sku[$data['skuKey']]['valname'] = $val['name'];
+            $gsku = array();
+            $gsku[$data['skuKey']][0]['keyName'] = $key['name'];
+            $gsku[$data['skuKey']][0]['valid'] = $data['skuVal'];
+            $gsku[$data['skuKey']][0]['valname'] = $val['name'];
+            $detal['goodssku'] = json_encode($sku,JSON_UNESCAPED_UNICODE);
+            $gdata['gsku'] = json_encode($gsku,JSON_UNESCAPED_UNICODE);
+            //添加商品
+            DB::beginTransaction();
+            try{
+                $ins = DB::table('goods')->insertGetId($gdata);
+                if(!$ins){
+                    DB::rollBack();
+                    return ReturnMsg::getMsg(1024);
+                }
+                $detal['gid'] = $ins;
+                DB::connection()->enableQueryLog();
+                $insd = DB::table('goods_detail')->insert($detal);
+                $logs = DB::getQueryLog();
+                $log['actionName'] =  '增加商品:'.$data['gname'];
+                $log['sql'] = $logs[0];
+                if(!$insd){
+                    DB::rollBack();
+                    return ReturnMsg::getMsg(1025);
+                }
+                //记录日志
+                Common::actionLog($log);
+                DB::commit();
+                return ReturnMsg::getMsg(0);
+            }catch (\Exception $e) {
+                //接收异常处理并回滚
+                DB::rollBack();
+                return ReturnMsg::getMsg(1026);
+            }
+        }else{//新增关联的商品
+            //查看商品表中是否存在此关联商品
+            $count = DB::table('goods')
+                ->where('gname',$data['gname'])
+                ->where('category_id',$data['cid'])
+                ->first();
+            if(!$count){
+                return ReturnMsg::getMsg(1027);
+            }
+            if($count->id != $data['belongid']){
+                return ReturnMsg::getMsg(1028);
+            }
+            //查看详细表中是否存在此属性商品
+            $detail = DB::table('goods_detail')
+                ->where('gid',$data['cid'])
+                ->where('goodsname',$data['gname'])
+                ->where('gskukey',$data['skuKey'])
+                ->where('gskuval',$data['skuVal'])
+                ->count();
+            if($detail){
+                return ReturnMsg::getMsg(1029);
+            }
+            //添加商品
+            $detal = array();
+            $detal['gid'] = $data['belongid'];
+            $detal['goodsname'] = $data['gname'];
+            $detal['goodsprice'] = $data['gprice']*100;
+            $detal['goodsnum'] = $data['gnum'];
+            $detal['gdesc'] = $data['gtext'];
+            $detal['img'] = $data['gupload'];
+            $detal['gskukey'] = $data['skuKey'];
+            $detal['gskuval'] = $data['skuVal'];
+            $detal['operator'] = Common::getId();
+            $detal['created_at'] = date('Y-m-d H:i:s');
+            $key = DB::table('skukey')->where('id',$data['skuKey'])->first();
+            $key = get_object_vars($key);
+            if(!$key){
+                return ReturnMsg::getMsg(1020);
+            }
+            $val = DB::table('skuvalue')->where('id',$data['skuVal'])->first();
+            $val = get_object_vars($val);
+            if(!$val){
+                return ReturnMsg::getMsg(1017);
+            }
+            $sku = array();
+            $sku[$data['skuKey']]['keyName'] = $key['name'];
+            $sku[$data['skuKey']]['valid'] = $data['skuVal'];
+            $sku[$data['skuKey']]['valname'] = $val['name'];
+            $detal['goodssku'] = json_encode($sku,JSON_UNESCAPED_UNICODE);
+
+            //添加商品
+            DB::beginTransaction();
+            try{
+                DB::connection()->enableQueryLog();
+                $insd = DB::table('goods_detail')->insert($detal);
+                $logs = DB::getQueryLog();
+                $log['actionName'] =  '增加新属性商品:'.$data['gname'];
+                $log['sql'] = $logs[0];
+                if(!$insd){
+                    DB::rollBack();
+                    return ReturnMsg::getMsg(1025);
+                }
+                //更新goods表的sku和价格范围
+                $goods = DB::table('goods')->where('id',$data['belongid'])->first();
+                $goods = get_object_vars($goods);
+                $gsku = json_decode($goods['gsku'],true);
+                if(isset($gsku[$data['skuKey']])){
+                    $tempkey = $gsku[$data['skuKey']];
+                    foreach ($tempkey as $item) {
+                        if($item['valid'] == $data['skuVal']){
+                            DB::rollBack();
+                            return ReturnMsg::getMsg(1029);
+                        }
+                    }
+                }
+                $arr = [
+                  'keyName'  =>$key['name'],
+                  'valid'    =>$data['skuVal'],
+                  'valname'  =>$val['name']
+                ];
+                $gsku[$data['skuKey']][] = $arr;
+
+                //获取goods表价格取值范围，并比较，换最大和最小的价格
+                $data['gprice'] = $data['gprice']*100;
+                if(!strstr($goods['gprice'],'~')){//说明只有一个商品，不存在最低价格与最高价格
+                    if($goods['gprice'] > $data['gprice']){
+                        $update['gprice'] = $data['gprice'].'~'.$goods['gprice'];
+                    }else{
+                        $update['gprice'] = $goods['gprice'].'~'.$data['gprice'];
+                    }
+                }else{//说明有多个商品，存在最低价格与最高价格
+                    $reef = explode('~',$goods['gprice']);
+                    if($data['gprice'] < $reef[0]){//替换最小价格
+                        $update['gprice'] = $data['gprice'].'~'.$reef[1];
+                    }else if ($data['gprice'] > $reef[1]){
+                        $update['gprice'] = $reef[0].'~'.$data['gprice'];
+                    }
+                }
+                $update['gsku'] = json_encode($gsku,JSON_UNESCAPED_UNICODE);
+                $up = DB::table('goods')->where('id',$data['belongid'])->update($update);
+                if(!$up){
+                    DB::rollBack();
+                    return ReturnMsg::getMsg(1024);
+                }
+                //记录日志
+                Common::actionLog($log);
+                DB::commit();
+                return ReturnMsg::getMsg(0);
+            }catch (\Exception $e) {
+                //接收异常处理并回滚
+                DB::rollBack();
+                return ReturnMsg::getMsg(1026);
+            }
+
+        }
+
+
+    }
+    /***
+     * 添加商品
+     */
+    public static function getBelongGoods($data){
+        //判断类型是否一致
+        $exit = DB::table('goods')
+            ->get();
+        if(!$exit){
+            return ReturnMsg::getMsg(1021);
+        }
+        //判断是否存在此商品（根据名称和类型）
+        $count = DB::table('categary')
+            ->where('gname',$data['gname'])
+            ->where('category_id',$data['cid'])
+            ->where('category_id',$data['cid'])
+            ->where('category_id',$data['cid'])
+            ->count();
+    }
+    /***
+     * 添加商品
+     */
+    public static function goodsstatus($data){
+        //判断类型是否一致
+        $exit = DB::table('goods_detail')->where('id',$data['id'])->first();
+        if(!$exit){
+            return ReturnMsg::getMsg(1030);
+        }
+        if(intval($exit->isdel) === intval($data['status'])){
+            return ReturnMsg::getMsg(1031);
+        }
+        //修改此商品状态
+        DB::connection()->enableQueryLog();
+        $count = DB::table('goods_detail')->where('id',$data['id'])->update(['isdel' => strval(intval($data['status']))]);
+        $logs = DB::getQueryLog();
+        if(!$count){
+            return ReturnMsg::getMsg(1032);
+        }
+        $log['actionName'] = $data['status']?"上架":'下架' . '商品:'.$data['id'];
+        $log['sql'] = $logs[0];
+        //记录日志
+        Common::actionLog($log);
+        return ReturnMsg::getMsg(0);
+    }
+    /***
+     * 获取所属商品
+     */
+    public static function goodsBelong($data){
+        $ee = DB::table('goods')
+            ->where('category_id',$data['id'])
+            ->get();
+        $ee = Common::objToArr($ee);
+        return ReturnMsg::getMsg(0,['list'=>$ee]);
+    }
 
     public static function getSkuList($data){
         //获取商品所有类型
