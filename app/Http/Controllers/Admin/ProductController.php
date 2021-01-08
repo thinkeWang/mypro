@@ -17,4 +17,16 @@ class ProductController extends Controller
         }
         return Product::index($data);
     }
+    public static function getPrice(Request $request){
+        $data = $request->input();
+        $validator =\Validator::make($data,[
+            'id'=>'required|numeric',
+            'gid'=>'required|numeric',
+            'skuRadioArray'=>'required|string'
+        ]);
+        if(!$validator->passes()){
+            return ReturnMsg::getMsg(1004);
+        }
+        return Product::getPrice($data);
+    }
 }

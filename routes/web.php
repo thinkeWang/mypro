@@ -44,6 +44,7 @@ Route::get('/', function () {
         /*商城首页*/
 
         Route::match(['get'],'goodsDetail','Admin\ProductController@index');//获取所属商品列表
+        Route::match(['post'],'getPrice','Admin\ProductController@getPrice');//获取所属商品列表
 
 
 

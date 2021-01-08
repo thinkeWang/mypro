@@ -16,4 +16,25 @@ class Product{
         $detail = get_object_vars($detail);
         return ReturnMsg::getMsg(0,['list'=>$detail]);
     }
+    public static function getPrice($data){
+        $sku = json_decode($data['skuRadioArray'],true);
+        if(is_null($sku)){
+            return ReturnMsg::getMsg(1033);
+        }
+        foreach($sku as $kay => $val){
+            $keyid = explode('sku',$kay)[0];
+            $res = DB::table('goods_detail')->where('gid',$data['gid'])
+                ->where('gskukey',$keyid)
+                ->where('gskuval',$val)
+                ->first();
+            if($res){
+                break;
+            }
+        }
+        if(isset($res)){
+            return ReturnMsg::getMsg(0,['price'=>$res->goodsprice/100]);
+        }else{
+            return ReturnMsg::getMsg(1034);
+        }
+    }
 }
